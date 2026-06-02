@@ -317,55 +317,34 @@ export default {
 </script>
 
 <style scoped>
+/* ── Root container ─────────────────────────────────────────── */
 .reports {
   padding: 0;
 }
 
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+/* ── Stat cards: accent left-border variant ─────────────────── */
+/* Overrides the global .stat-card to add the accent stripe      */
+.stat-card {
+  border-left: 3px solid var(--accent);
+  transition: all 0.15s ease;
 }
 
-.card-header {
-  margin-bottom: 1.5rem;
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  border-left-color: var(--accent);
 }
 
-.card-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #0f172a;
-  margin: 0;
+/* ── Stats grid: local margin override ──────────────────────── */
+/* Global .stats-grid uses margin-bottom; here we need top       */
+.stats-grid {
+  margin-top: var(--sp-5);
+  margin-bottom: 0;
 }
 
-.reports-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.reports-table th {
-  background: #f8fafc;
-  padding: 0.75rem;
-  text-align: left;
-  font-weight: 600;
-  color: #64748b;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.reports-table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.reports-table tr:hover {
-  background: #f8fafc;
-}
-
+/* ── Bar chart ──────────────────────────────────────────────── */
 .chart-container {
-  padding: 2rem 1rem;
-  min-height: 300px;
+  padding: var(--sp-6) var(--sp-5);
+  min-height: 280px;
 }
 
 .bar-chart {
@@ -373,7 +352,7 @@ export default {
   align-items: flex-end;
   justify-content: space-around;
   height: 250px;
-  gap: 0.5rem;
+  gap: var(--sp-2);
 }
 
 .bar-wrapper {
@@ -393,96 +372,35 @@ export default {
 
 .bar {
   width: 100%;
-  background: linear-gradient(to top, #3b82f6, #60a5fa);
-  border-radius: 4px 4px 0 0;
-  transition: all 0.3s;
+  background: linear-gradient(to top, var(--accent), #60a5fa);
+  border-radius: var(--sp-1) var(--sp-1) 0 0;
+  transition: all 0.15s ease;
   cursor: pointer;
+  min-height: 2px;
 }
 
 .bar:hover {
-  background: linear-gradient(to top, #2563eb, #3b82f6);
+  background: linear-gradient(to top, #1d4ed8, var(--accent));
+  box-shadow: 0 -2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .bar-label {
-  margin-top: 0.5rem;
+  margin-top: var(--sp-5);
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-muted);
   text-align: center;
   transform: rotate(-45deg);
   white-space: nowrap;
-  margin-top: 1.5rem;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #3b82f6;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin-bottom: 0.5rem;
-}
-
-.stat-value {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.badge.success {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.badge.warning {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.badge.danger {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
+/* ── Change indicators ──────────────────────────────────────── */
 .positive-change {
-  color: #16a34a;
+  color: var(--success);
   font-weight: 600;
 }
 
 .negative-change {
-  color: #dc2626;
+  color: var(--danger);
   font-weight: 600;
-}
-
-.loading {
-  text-align: center;
-  padding: 3rem;
-  color: #64748b;
-}
-
-.error {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 1rem;
-  border-radius: 8px;
-  margin: 1rem 0;
 }
 </style>
