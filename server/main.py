@@ -2,9 +2,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from pydantic import BaseModel
+from datetime import datetime, timedelta
 from mock_data import inventory_items, orders, demand_forecasts, backlog_items, spending_summary, monthly_spending, category_spending, recent_transactions, purchase_orders
 
 app = FastAPI(title="Factory Inventory Management System")
+
+# Delivery lead time (in days) for submitted restocking orders, keyed by demand trend.
+# Faster restocking for items whose demand is growing; slower for declining demand.
+RESTOCK_LEAD_DAYS = {"increasing": 7, "stable": 14, "decreasing": 21}
 
 # Quarter mapping for date filtering
 QUARTER_MAP = {
@@ -89,6 +94,7 @@ class DemandForecast(BaseModel):
     forecasted_demand: int
     trend: str
     period: str
+    unit_cost: float
 
 class BacklogItem(BaseModel):
     id: str
@@ -119,6 +125,17 @@ class CreatePurchaseOrderRequest(BaseModel):
     unit_cost: float
     expected_delivery_date: str
     notes: Optional[str] = None
+
+class RestockOrderItem(BaseModel):
+    sku: str
+    name: str
+    quantity: int
+    unit_price: float
+    trend: str  # demand trend; used only to derive the delivery lead time
+
+class CreateRestockingOrderRequest(BaseModel):
+    items: List[RestockOrderItem]
+    total_value: float
 
 # API endpoints
 @app.get("/")
@@ -160,6 +177,40 @@ def get_order(order_id: str):
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     return order
+
+@app.post("/api/orders", response_model=Order, status_code=201)
+def create_restocking_order(request: CreateRestockingOrderRequest):
+    """Submit a restocking order. Appended to the in-memory orders list (not persisted)."""
+    if not request.items:
+        raise HTTPException(status_code=400, detail="Order must contain at least one item")
+
+    order_date = datetime.now()
+    # Delivery lead time is the slowest item in the order; unknown trends fall back to 'stable' (14d).
+    max_lead = max(RESTOCK_LEAD_DAYS.get(item.trend, 14) for item in request.items)
+    expected_delivery = order_date + timedelta(days=max_lead)
+
+    # IDs follow the existing stringified-max+1 convention used across the data files.
+    new_id = str(max((int(o["id"]) for o in orders), default=0) + 1)
+
+    new_order = {
+        "id": new_id,
+        "order_number": f"RST-{order_date.year}-{int(new_id):04d}",
+        "customer": "Internal Restocking",
+        # Drop the trend field; stored items match the existing order item shape.
+        "items": [
+            {"sku": i.sku, "name": i.name, "quantity": i.quantity, "unit_price": i.unit_price}
+            for i in request.items
+        ],
+        "status": "Submitted",
+        "order_date": order_date.isoformat(timespec="seconds"),
+        "expected_delivery": expected_delivery.isoformat(timespec="seconds"),
+        "total_value": request.total_value,
+        "actual_delivery": None,
+        "warehouse": None,
+        "category": None,
+    }
+    orders.append(new_order)
+    return new_order
 
 @app.get("/api/demand", response_model=List[DemandForecast])
 def get_demand_forecasts():
