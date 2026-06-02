@@ -132,6 +132,29 @@
         <span class="topbar-page-title">{{ pageTitle }}</span>
 
         <div class="topbar-right">
+          <button
+            class="theme-toggle"
+            @click="toggleTheme"
+            :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+            :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+          >
+            <!-- Moon: shown in light mode — clicking switches to dark -->
+            <svg v-if="theme !== 'dark'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            <!-- Sun: shown in dark mode — clicking switches to light -->
+            <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          </button>
           <LanguageSwitcher />
         </div>
       </header>
@@ -201,6 +224,32 @@ export default {
       collapsed.value = !collapsed.value
       try { localStorage.setItem('sidebar-collapsed', String(collapsed.value)) } catch (_) { /* ignore */ }
     }
+
+    // Theme state — persisted to localStorage, falls back to OS preference
+    const theme = ref('light')
+    try {
+      const stored = localStorage.getItem('theme')
+      if (stored !== null) {
+        theme.value = stored
+      } else {
+        theme.value = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      }
+    } catch (_) { /* ignore */ }
+
+    const applyTheme = (t) => {
+      try {
+        document.documentElement.setAttribute('data-theme', t)
+      } catch (_) { /* ignore */ }
+    }
+
+    const toggleTheme = () => {
+      theme.value = theme.value === 'dark' ? 'light' : 'dark'
+      try { localStorage.setItem('theme', theme.value) } catch (_) { /* ignore */ }
+      applyTheme(theme.value)
+    }
+
+    // Apply theme immediately (before mount) so there's no flash
+    applyTheme(theme.value)
 
     // Page title derived from current route
     const pageTitle = computed(() => {
@@ -281,7 +330,11 @@ export default {
       }
     }
 
-    onMounted(loadTasks)
+    onMounted(() => {
+      loadTasks()
+      // Re-apply theme on mount to handle any SSR/hydration edge cases
+      applyTheme(theme.value)
+    })
 
     // Derive initials from the first letter of each of the first two words
     const brandInitials = computed(() => {
@@ -296,6 +349,8 @@ export default {
       t,
       collapsed,
       toggleCollapsed,
+      theme,
+      toggleTheme,
       pageTitle,
       brandInitials,
       showProfileDetails,
@@ -346,6 +401,29 @@ export default {
 }
 
 /* ============================================================
+   Dark mode token overrides
+   ============================================================ */
+:root[data-theme="dark"] {
+  --bg-app: #0b1120;
+  --bg-surface: #111c30;
+  --bg-sidebar: #0a0f1d;
+  --bg-sidebar-hover: #1e293b;
+  --border: #283449;
+  --text-strong: #f1f5f9;
+  --text: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-on-dark: #cbd5e1;
+  --accent: #3b82f6;
+  --accent-soft: #1e293b;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================
    Reset
    ============================================================ */
 * {
@@ -360,6 +438,7 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* ============================================================
@@ -565,6 +644,27 @@ body {
   margin-left: auto;
   display: flex;
   align-items: center;
+  gap: var(--sp-2);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-app);
+  color: var(--text-strong);
 }
 
 /* ============================================================
@@ -607,7 +707,7 @@ body {
   padding: 1.25rem;
   border-radius: 10px;
   border: 1px solid var(--border);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
@@ -653,6 +753,7 @@ body {
   padding: 1.25rem;
   border: 1px solid var(--border);
   margin-bottom: 1.25rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .card-header {
