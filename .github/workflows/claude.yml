@@ -19,6 +19,9 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
+      # Required: the action exchanges a GitHub OIDC token to authenticate.
+      # Without this the run fails with "Could not fetch an OIDC token".
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: anthropics/claude-code-action@v1
